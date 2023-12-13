@@ -1,4 +1,5 @@
 "use client";
+import _ from 'underscore';
 import React, { useState, useEffect }  from 'react';
 import Confetti from 'react-confetti'
 import { questions } from './questions';
@@ -17,10 +18,10 @@ const supriseLinks = [
   'https://media.tenor.com/z2__vv21YrMAAAAC/fall-falling.gif',
   'https://media.tenor.com/nJP7ulH1lUYAAAAd/count-fail-epic-count-fail.gif',
   
-  //'https://media.tenor.com/G9zg9beK7R0AAAAd/cat-stairs-are-hard.gif',
-  //'https://media.tenor.com/y29IKgPqezcAAAAC/fml-done.gif'
+  'https://media.tenor.com/G9zg9beK7R0AAAAd/cat-stairs-are-hard.gif',
+  'https://media.tenor.com/y29IKgPqezcAAAAC/fml-done.gif',
 
-  /*
+  
   'https://media.tenor.com/mG2C4qgNU3EAAAAC/happy-birthday.gif',
   'https://media.tenor.com/7db7tpuWM9gAAAAC/pfsf1968.gif',
   'https://media.tenor.com/1Us4pAnPJhMAAAAd/cat-fail.gif',
@@ -38,12 +39,11 @@ const supriseLinks = [
   'https://media.tenor.com/YdoWqUTQx5UAAAAC/hamster-hamster-wheel.gif',
   'https://media.tenor.com/7yLeScrVvmcAAAAd/falling.gif',
   'https://media.tenor.com/TcqTnKToUL8AAAAC/cat-slide.gif',
-  */
+  
 ];
 
 const sampleOne = (arr) => {
-  const index = Math.floor(Math.random()*arr.length); 
-  return arr[index];
+  return _.shuffle(arr)[0];
 }
 
 
@@ -54,17 +54,34 @@ const Game = () => {
   const [runId, setRunId] = useState('1');
   const [question, setQuestion] = useState();
   const [supriseLink, setSupriseLink] = useState('');
+  const [targetTag, setTargetTag] = useState('multiplication'); 
   
   useEffect(()=> {
-    if (!question) {
-      setQuestion(sampleOne(questions.slice(0,7)));
+
+    let queryParamTags = null;
+    const searchParams = new URLSearchParams((window.location.search || '').slice(1));
+    for (const [key, value] of searchParams.entries()) {
+      if (key === 'tags') {
+        queryParamTags = value;
+      }
     }
-  }, [question])
+
+    if (!question) {
+      const possibleTags = _.uniq(_.flatten(_.pluck(questions, 'tags')));
+      const newTargetTag = queryParamTags ? queryParamTags : Math.random() < 0.5 ? _.shuffle(possibleTags)[0] : '';
+      setTargetTag(newTargetTag);
+      setQuestion(sampleOne(
+        questions.filter(q => !targetTag || q.tags.includes(newTargetTag)).slice(0,7)
+      ));
+    }
+  }, [question, targetTag])
 
   const onRestart = () => {
     setLevel(0);
     setRunId('' + Math.random());
-    setQuestion(sampleOne(questions.slice(0,7)));
+    setQuestion(sampleOne(
+      questions.filter(q => !targetTag || q.tags.includes(targetTag)).slice(0,7)
+    ));
   }
 
   const onLose = () => {
@@ -80,7 +97,7 @@ const Game = () => {
     setLevel(newLevel);
     setTimeout(() => {
       const otherQuestions = questions.filter(
-        ({ id }) => id !== question.id
+        ({ id, tags }) => id !== question.id && (!targetTag || tags.includes(targetTag))
       );
   
       const isSeenLevel = {};
@@ -88,9 +105,9 @@ const Game = () => {
       for (const otherQuestion of otherQuestions) {
         if (!isSeenLevel[otherQuestion.level]) {
           isSeenLevel[otherQuestion.level] = true;
-          const mappedLevel = 3*(level/MAX_LEVEL)-0.2;
+          const mappedLevel = 3*(level/MAX_LEVEL) + 1;/*-0.2*/;
           const diff = Math.abs(mappedLevel - otherQuestion.level);
-          const nb = Math.ceil(10 / (1 + diff*diff*diff));
+          const nb = Math.ceil(10 / (1 + diff*diff));
           for (let i = 0; i < nb; i++) {
             availableLevels.push(otherQuestion.level);
           }
@@ -121,7 +138,9 @@ const Game = () => {
         paddingRight: '10vw',
       }}
     >
-      
+      <div style={{ position: 'fixed', top: 10, right: 10 }}>
+        {targetTag && <span title={targetTag}>•</span>}
+      </div>
       <StarRatings 
         key={level}
         rating={level}

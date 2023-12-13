@@ -1,0 +1,29 @@
+
+.sorting-challenge-list {
+  user-select: none;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.sorting-challenge-item {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+  border: 1px solid lightgrey;
+  border-radius: 6px;
+  color: black;
+  margin: 4px;
+  width: 60px;
+  height: 60px;
+  cursor: grab;
+}
+
+.sorting-challenge-won .sorting-challenge-item {
+  background-color: lime;
+}
+
+.sorting-challenge-dragged {
+  background-color: whitesmoke;
+}
